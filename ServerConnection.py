@@ -74,10 +74,11 @@ class ClientThread():
             return 0
 
     def send(self, data):
-        self.serverSocket.send(data)
-        parsedData=data.split(" ")
-        if parsedData[0]=="NME":
-            self.receive()
+        self.serverSocket.send(data.encode("ascii"))
+        if data[:2]=="NME":
+            return self.receive("SET")
+        elif data[:2]=="MOV":
+            return self.receive("UPD")
 
 
     
