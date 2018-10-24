@@ -11,7 +11,7 @@ class ClientThread():
         self.serverSocket.connect((ip,port))
         print("Connection to %s on port %s" %(ip,port))
         data=input("Choose your name : ")
-        self.send("NME%s%s" %(data.length,data))    
+        self.send(["NME",len(data),data])    
 
     def receive_data(self, size, fmt):
         data = bytes()
@@ -74,11 +74,18 @@ class ClientThread():
             return 0
 
     def send(self, data):
-        self.serverSocket.send(data.encode("ascii"))
-        if data[:2]=="NME":
+        if data[0]=="NME":
+            self.serverSocket.send(data[0].encode("ascii"))
+            self.serverSocket.send(struct.pack("1B",6))
+            name=input("Write your name here: ")
+            self.serverSocket.send(name.encode("ascii")) 
             return self.receive("SET")
-        elif data[:2]=="MOV":
+        elif data[0]=="MOV":
             return self.receive("UPD")
+
+
+
+
 
 
     
