@@ -1,5 +1,8 @@
-#coding: utf-8
+# -*- coding: UTF-8 -*-
 import socket
+import argparse
+import struct
+
 
 class ClientThread():
     def __init__(self, buff_size):
@@ -10,10 +13,39 @@ class ClientThread():
         self.serverSocket.connect((ip,port))
         print("Connection to %s on port %s" %(ip,port))
         data=input("Choose your name : ")
-        self.send("NME "+data.length+" "+data)    
+        self.send("NME%s%s" %(data.length,data))    
 
-    def receive(self):
-        return self.serverSocket.recv(self.buff_size)
+    def receive_data(self, size, fmt):
+    data = bytes()
+    while len(data) < size:
+        data += self.serverSocket.recv(size - len(data))
+    return struct.unpack(fmt, data)
+
+    def receive(self, expected):
+        received = self.serverSocket.recv(3).decode("ascii") 
+        if received==expected:  
+            if received=="SET":
+                data=bytes()
+                n,m=self.receive_data(2,"2B")
+                return [(n,m)]+self.receive("HUM")
+            elif received=="HUM":
+                res=[]
+                n= self.receive_data(1,"1B")[0]
+                homes= self.receive_data(2*n,"{}B".format(2*n))
+                count=0
+                prev=0
+                for h in homes:
+                    if count%2==0:
+                        prev=h
+                    else:
+                        res.append((prev,h))
+                    count++
+                return res+self.receive("HME")
+            elif received=="HME":
+                start_pos=tuple(self.receive_data(2,"2B"))
+                return [start_pos]
+        else:
+            print("Error at "+expected)
 
     def send(self, data):
         self.serverSocket.send(data)
@@ -21,8 +53,7 @@ class ClientThread():
         if parsedData[0]=="NME":
             self.receive()
 
+
     
 
-TCP_IP = "127.0.0.1"
-TCP_PORT = 5555
-BUFFER_SIZE = 1024
+
