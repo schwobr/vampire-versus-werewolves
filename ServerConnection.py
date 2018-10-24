@@ -5,14 +5,15 @@ class ClientThread():
     def __init__(self):
         self.serverSocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-    def connect(ip, port):
-        self.serverSocket.connect((ip,port)
-        print("Connection to "+ip+" on port "+str(port))
+    def connect(self, ip, port):
+        self.serverSocket.connect((ip,port))
+        print("Connection to %s on port %s" %(ip,port))
 
-    def receive(buff_size):
+    def receive(self, buff_size):
         res=self.serverSocket.recv(buff_size)
 
-    def send()
+    def send(self, data):
+        self.serverSocket.send(data)
     
 
 TCP_IP = "127.0.0.1"
