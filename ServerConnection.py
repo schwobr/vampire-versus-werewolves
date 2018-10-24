@@ -76,9 +76,8 @@ class ClientThread():
     def send(self, data):
         if data[0]=="NME":
             self.serverSocket.send(data[0].encode("ascii"))
-            self.serverSocket.send(struct.pack("1B",6))
-            name=input("Write your name here: ")
-            self.serverSocket.send(name.encode("ascii")) 
+            self.serverSocket.send(struct.pack("1B",data[1]))
+            self.serverSocket.send(data[2].encode("ascii"))
             return self.receive("SET")
         elif data[0]=="MOV":
             return self.receive("UPD")
