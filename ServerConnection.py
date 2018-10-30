@@ -11,7 +11,7 @@ class ClientThread():
         self.serverSocket.connect((ip,port))
         print("Connection to %s on port %s" %(ip,port))
         data=input("Choose your name : ")
-        self.send(["NME",len(data),data])    
+        return self.send(["NME",len(data),data])    
 
     def receive_data(self, size, fmt):
         data = bytes()
@@ -38,7 +38,7 @@ class ClientThread():
                     else:
                         res.append((prev,h))
                     count+=1
-                return res+self.receive("HME")
+                return [n]+res+self.receive("HME")
             elif received=="HME":
                 start_pos=tuple(self.receive_data(2,"2B"))
                 return [start_pos]+self.receive("MAP")
