@@ -43,7 +43,7 @@ class ClientThread():
                 start_pos=tuple(self.receive_data(2,"2B"))
                 return [start_pos]+self.receive("MAP")
             elif received=="MAP" or received=="UPD":
-                n=self.receive_data(1,"1B")
+                n=self.receive_data(1,"1B")[0]
                 commands=self.receive_data(5*n,"{}B".format(5*n))
                 res=[]
                 x=0
