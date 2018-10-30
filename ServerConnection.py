@@ -61,7 +61,7 @@ class ClientThread():
                     elif count%5==3:
                         v=c
                     else:
-                        res.append(x,y,h,v,c)
+                        res.append((x,y,h,v,c))
                     count+=1
                 return res
             elif received=="END":
