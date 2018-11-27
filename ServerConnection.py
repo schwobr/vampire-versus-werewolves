@@ -80,6 +80,10 @@ class ClientThread():
             self.serverSocket.send(data[2].encode("ascii"))
             return self.receive("SET")
         elif data[0]=="MOV":
+            self.serverSocket.send(data[0].encode("ascii"))
+            n=data[1]
+            self.serverSocket.send(struct.pack("1B",n))
+            self.serverSocket.send(struct.pack("{}B".format(5*n), *(data[2])))
             return self.receive("UPD")
 
 

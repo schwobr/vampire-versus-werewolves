@@ -6,7 +6,6 @@ Created on Tue Oct 30 10:10:20 2018
 """
 import numpy as np
 
-
 class Tray():
     
     def __init__(self, N, M, x, y, Map):        
@@ -21,9 +20,7 @@ class Tray():
         self.MAP=np.zeros((N,M,2),int)
         self.UpdateTray(Map)
         self.Type=self.CheckPlayer(Map,x,y)
-
-
-       
+     
         
     def UpdateTray(self,liste):
         for element in liste:
@@ -33,9 +30,12 @@ class Tray():
             elif element[3]!=0:
                 self.MAP[element[1],element[0],0]=2
                 self.MAP[element[1],element[0],1]=element[3]
-            else:
+            elif element[4]!=0:
                 self.MAP[element[1],element[0],0]=3
                 self.MAP[element[1],element[0],1]=element[4]
+            else:
+                self.MAP[element[1],element[0],0]=0
+                self.MAP[element[1],element[0],1]=0
             self.updateLists()
             self.count()
         
@@ -77,3 +77,63 @@ class Tray():
                         self.vampires.append((y,x,j))
                     elif i==3:
                         self.werewolves.append((y,x,j))
+
+    def stupidAI(self):
+        moves = []
+        n=0
+        print(self.N_humans)
+        if self.Type==2:
+            for v in self.vampires:
+                x = 0
+                y = 0
+                mini = 100000
+                if self.N_humans>0:
+                    for h in self.humans:
+                        d = (h[0] - v[0])**2 + (h[1] - v[1])**2
+                        if d < mini :
+                            mini = d
+                            x=h[0]
+                            y=h[1]
+                else :
+                    print(self.werewolves)
+                    for w in self.werewolves:
+                        d = (w[0] - v[0])**2 + (w[1] - v[1])**2
+                        if d < mini :
+                            mini = d
+                            x=w[0]
+                            y=w[1]
+                moves.append(v[0])
+                moves.append(v[1])
+                moves.append(v[2])
+                moves.append(v[0]+np.sign(x-v[0]))
+                moves.append(v[1]+np.sign(y-v[1]))
+                n+=1
+        else:
+            for w in self.werewolves:
+                x = 0
+                y = 0
+                mini = 100000
+                if self.N_humans>0:
+                    for h in self.humans:
+                        d = (h[0] - w[0])**2 + (h[1] - w[1])**2
+                        if d < mini :
+                            mini = d
+                            x=h[0]
+                            y=h[1]
+                else :
+                    for v in self.vampires:
+                        d = (w[0] - v[0])**2 + (w[1] - v[1])**2
+                        if d < mini :
+                            mini = d
+                            x=v[0]
+                            y=v[1]
+                moves.append(w[0])
+                moves.append(w[1])
+                moves.append(w[2])
+                moves.append(w[0]+np.sign(x-w[0]))
+                moves.append(w[1]+np.sign(y-w[1]))
+                n+=1
+        print(moves)
+        return ["MOV", n, moves]
+
+
