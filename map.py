@@ -111,4 +111,12 @@ class Tray():
         print(moves)
         return ["MOV", n, moves]
 
+    def IsTerminal(self):
+        return self.N_vampires == 0 or self.N_werewolves == 0
+
+    def GetChildren(self):
+        test = self.Type == 2
+        us = self.vampires if test else self.werewolves
+        them = self.werewolves if test else self.vampires
+        return []
 
