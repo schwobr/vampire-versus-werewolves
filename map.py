@@ -124,10 +124,29 @@ class Tray():
             n = u[2]
             x = u[0]
             y = u[1]
-                
+            for i in range(1, maxSplit+1):
+                sums = SubSum(i, n)
+                #for s in sums:
 
 
         return res
+
+    def GetMoves(self, x, y):
+        moves_x = [x]
+        moves_y = [y]
+        moves = []
+        if x != 0:
+            moves_x.append(x - 1)
+        if x != self.M:
+            moves_x.append(x + 1)
+        if y != 0:
+            moves_y.append(y - 1)
+        if y != self.N:
+            moves_y.append(y + 1)
+        for m_x in moves[x]:
+            for m_y in moves[y]:
+                moves.append(m_x, m_y)
+        return moves
 
 
 def SubSum(splits, n):
