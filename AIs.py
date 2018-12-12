@@ -23,3 +23,6 @@ def MinValue(tray : Tray, alpha, beta):
             return v
         beta = min(beta, v)
     return v
+
+def heuristic(tray : Tray):
+    return 0

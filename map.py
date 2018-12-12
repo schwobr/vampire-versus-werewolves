@@ -114,9 +114,40 @@ class Tray():
     def IsTerminal(self):
         return self.N_vampires == 0 or self.N_werewolves == 0
 
-    def GetChildren(self):
+    def GetChildren(self, maxSplit):
+        res = []
         test = self.Type == 2
         us = self.vampires if test else self.werewolves
-        them = self.werewolves if test else self.vampires
-        return []
+        them = self.werewolves if test else self.vampires        
+        for u in us:
+            moves = []
+            n = u[2]
+            x = u[0]
+            y = u[1]
+                
+
+
+        return res
+
+
+def SubSum(splits, n):
+    if splits == 1:
+        return [np.array([n])]
+    else:
+        l = []
+        for i in range(1, int(n/2)+1):
+            prec = SubSum(splits - 1, n - i)
+            for p in prec:
+                res = np.zeros(splits, dtype = int)
+                res[0] = i
+                test = True
+                for j in range(1, res.shape[0]):
+                    test = res[j - 1] <= p[j - 1]
+                    if test:
+                        res[j] = p[j - 1]
+                    else:
+                        break
+                if test:
+                    l.append(res)
+        return l
 
