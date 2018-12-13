@@ -12,7 +12,7 @@ n_houses=res[1]
 hum=res[2:2+n_houses]
 x,y=res[2+n_houses]
 Map=res[3+n_houses:]
-tray = map.Tray(n,m,x,y,Map)
+tray = map.Tray(n, m, Map, x = x, y = y)
 upd=client.receive("UPD")
 tray.UpdateTray(upd)
 
