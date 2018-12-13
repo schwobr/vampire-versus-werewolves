@@ -2,3 +2,5 @@
 Resources/Server/trace*
 __pycache__/
 .vscode/settings.json
+*.ipynb
+.ipynb_checkpoints/
