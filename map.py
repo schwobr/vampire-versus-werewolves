@@ -5,7 +5,6 @@ Created on Tue Oct 30 10:10:20 2018
 @author: hassenzarrouk
 """
 import numpy as np
-import random as rd
 
 class Tray():
     
@@ -118,7 +117,15 @@ class Tray():
     def IsTerminal(self):
         return self.N_vampires == 0 or self.N_werewolves == 0
 
-    def GetChildren(self, maxSplit):
+
+    def GetChildren(self, maxSplit : int):
+        """Returns the list of all possible children the tray as lists of updates and moves
+        
+        :param maxSplit: maximum number of subgroups in which we try to split every group
+        :type maxSplit: int
+        :return: List of all possible children. Each chil is represented by a list of dictionnaries that contain a MOV 5-uplet and a UPD 5-uplet
+        :rtype: list[list[dict, tuple[int, int, int , int]]
+        """
         test = self.Type == 2
         us = self.vampires if test else self.werewolves    
         all_moves = []  
@@ -126,17 +133,28 @@ class Tray():
             n = u[2]
             x = u[0]
             y = u[1]
-            moves = self.GetMoves(x, y)
-            moves_u = []
-            for i in range(1, maxSplit+1):
-                sums = SubSum(i, n)
-                for s in sums:
-                    submoves = SubMoves(moves, s)
-                    moves_u += submoves
-            all_moves.append(moves_u)
+            moves_group = self.GetMoves(x, y)
+            submoves_group = []
+            for i in range(1, maxSplit + 1):
+                subsums = SubSum(i, n)
+                for s in subsums:
+                    submoves = SubMoves(moves_group, s)
+                    submoves_group += submoves
+            all_moves.append(submoves_group)
         return self.GetUpdates(all_moves)
 
-    def GetMoves(self, x, y):
+    def GetMoves(self, x : int, y : int):
+        """
+        Given a position, gets all the accessible positions from there
+
+        :param x: absciss
+        :param y: ordinate
+        :type x: int
+        :type y: int
+        :return: list of 4-uplets where the first 2 elements represent the starting position and the last 2 
+        the ending position of a move
+        :rtype: list[tuple[int, int, int, int]]
+        """
         moves_x = [x]
         moves_y = [y]
         moves = []
@@ -153,46 +171,54 @@ class Tray():
                 moves.append((x, y, m_x, m_y))
         return moves
 
-    def GetUpdates(self, all_moves):
+    def GetUpdates(self, all_moves : list):
+        """
+        Given the list of all possible moves, returns the list of all possible update lists with same format as server's UPD packages. Every update is associated with the corresponding MOV request
+
+        :param all_moves: List of list. Each sublist corresponds to a group of allied creatures on the board and contains other sublists, that themselves contain a set of compatible moves from this group
+        :type all_moves: list[list[list[tuple[int, int, int, int, int]]]]
+        :return: A list of list of compatible updates. Every sublist contains dictionaries that contain the UPD 5-uplet and the MOV 5-uplet, and all these dictionaries are moves that can be performed the same turn
+        :rtype: list[list[[dict, tuple[int, int, int, int, int]]]]
+        """
         if len(all_moves) == 1:
             updates = []
-            moves = all_moves[0]
-            for move in moves:
+            submoves_group = all_moves[0]
+            for submoves in submoves_group:
                 n = 0
                 upd = []
-                for sub_move in move:
-                    m = [sub_move[2], sub_move[3], 0, 0, 0]
-                    if not(sub_move[3] == sub_move[1] and sub_move[2] == sub_move[0]):
-                        n += sub_move[4]
-                        if self.MAP[sub_move[3], sub_move[2], 0] == self.Type:
-                            m[1 + self.Type] = self.MAP[sub_move[3], sub_move[2], 1] + sub_move[4]
-                        elif self.MAP[sub_move[3], sub_move[2], 0] == 1:
-                            if sub_move[4] >= self.MAP[sub_move[3], sub_move[2], 1]:
-                                m[1 + self.Type] = self.MAP[sub_move[3], sub_move[2], 1] + sub_move[4]
+                for submove in submoves:
+                    m = [submove[3], submove[4], 0, 0, 0]
+                    if not(submove[4] == submove[1] and submove[3] == submove[0]):
+                        n += submove[2]
+                        if self.MAP[submove[4], submove[3], 0] == self.Type:
+                            m[1 + self.Type] = self.MAP[submove[4], submove[3], 1] + submove[2]
+                        elif self.MAP[submove[4], submove[3], 0] == 1:
+                            if submove[2] >= self.MAP[submove[4], submove[3], 1]:
+                                m[1 + self.Type] = self.MAP[submove[4], submove[3], 1] + submove[2]
                             else : 
-                                (win, n1) = RandomBattle(sub_move[4], self.MAP[sub_move[3], sub_move[2], 1], True)
+                                (win, n1) = RandomBattle(submove[2], self.MAP[submove[4], submove[3], 1], True)
                                 if win:
                                     m[1 + self.Type] = n1
                                 else:
                                     m[2] = n1
                         else:
-                            if sub_move[4] >= 1.5 * self.MAP[sub_move[3], sub_move[2], 1]:
-                                m[1 + self.Type] = sub_move[4]
-                            elif self.MAP[sub_move[3], sub_move[2], 1] < 1.5 * sub_move[4]:
-                                (win, n1) = RandomBattle(sub_move[4], self.MAP[sub_move[3], sub_move[2], 1], False)
+                            if submove[2] >= 1.5 * self.MAP[submove[4], submove[3], 1]:
+                                m[1 + self.Type] = submove[2]
+                            elif self.MAP[submove[4], submove[3], 1] < 1.5 * submove[2]:
+                                (win, n1) = RandomBattle(submove[2], self.MAP[submove[4], submove[3], 1], False)
                                 if win:
                                     m[1 + self.Type] = n1
                                 else:
                                     m[6 - self.Type] = n1
                         upd.append(tuple(m))
-                m = [sub_move[0], sub_move[1], 0, 0, 0]
-                m[1 + self.Type] = self.MAP[sub_move[1], sub_move[0], 1] - n
-                upd.append(tuple(m))
+                m = [submove[0], submove[1], 0, 0, 0]
+                m[1 + self.Type] = self.MAP[submove[1], submove[0], 1] - n
+                upd.append({'UPD' : tuple(m), 'MOV' : tuple(submove)})
                 updates.append(upd)
             return updates
         else:
-            moves = all_moves.pop(0)
-            updates = self.GetUpdates([moves])
+            submoves_group = all_moves.pop(0)
+            updates = self.GetUpdates([submoves_group])
             res = []
             for upd in updates:
                 tray = Tray(self.N, self.M, [], Type = self.Type)
@@ -202,70 +228,99 @@ class Tray():
                 for other_upd in other_updates:
                     res.append(upd + other_upd)
             return res            
+
+
+def RandomBattle(attack : int, defend : int, humans : bool):
+    """
+    Finds the most probable result of a random battle (if probability that attackers win is 0.5, we suppose that they win)
     
-            
-def Fusion(tray1 : Tray, tray2 : Tray):
-    newTray = Tray(tray1.N, tray1.M, [], Type = tray1.Type)
-    newTray.MAP = np.copy(tray1.MAP)
-    for i in range(tray1.N):
-        for j in range(tray1.M):
-            if tray1.MAP[i, j, 0] != tray2.MAP[i, j, 0] or tray1.MAP[i, j, 1] != tray1.MAP[i, j, 1]:
-                if tray1.MAP[i, j, 0] == tray1.Type and tray2.MAP[i, j , 0] == tray2.Type:
-                    newTray.MAP[i, j, 1] = max(tray1.MAP[i, j , 1], tray2.MAP[i, j, 1])
-                elif tray1.MAP[i, j, 0] != tray1.Type and tray2.MAP[i, j , 0] != tray2.Type:
-                    newTray.MAP[i, j, 1] = min(tray1.MAP[i, j, 1], tray2.MAP[i, j, 1])
-                elif tray2.MAP[i, j, 0] == tray2.Type:
-                    newTray.MAP[i, j, 0] = tray2.MAP[i, j, 0]
-                    newTray.MAP[i, j, 1] = tray2.MAP[i, j ,1]
-    newTray.updateLists()
-    return newTray 
+    :param attack: number of attackers
+    :param defend: number of defenders
+    :param humans: boolean such that True means that defenders are humans, false means they are not
+    :type attack: int
+    :type defend: int
+    :type humans: bool
+    :return: couple composed of a boolean assigned to True if attackers won, and an int that represents the mean number of survivors after the battle
+    :rtype: tuple[bool, int]
 
-def RandomBattle(attack, defend, humans):
-    n = 0
-    r = rd.random()
+    :Example:
+
+    >>> RandomBattle(5, 6, True)
+    (False, 3)
+    """
     p = attack / (2 * defend) if attack <= defend else attack / defend - 0.5
-    if p >= r:
-        for i in range(attack):
-            r = rd.random()
-            if p >= r:
-                n += 1
+    if p >= 0.5:
+        surv = attack * p
         if humans:
-            for i in range(defend):
-                r = rd.random()
-                if p >= r:
-                    n += 1
-        return (True, n)
+            surv += defend * p
+        return (True, int(surv))
     else:
-        for i in range(defend):
-            r = rd.random()
-            if 1 - p >= r:
-                n += 1
-        return (False, n)
+        surv = defend * (1 - p)
+        return (False, int(surv))
 
 
-def SubMoves(moves, sum):
-    if sum.shape[0] == 1:
-        return [[(m[0], m[1], m[2], m[3], sum[0])] for m in moves]
+def SubMoves(moves : list, subsum : list):
+    """
+    Given a set of possible moves from a cell that contains n creatures and a subsum list of k-size arrays, gives all the possible submoves created by splitting the n elements in k
+    
+    :param moves: List of 4-uplets that represent all possible moves from a cell. For each 4-uplet, the first two elements represent the position of origin, and the last 2 the position of arrival
+    :param subsums: k-size (k fixed) array such that the sum of all elements of the array is n 
+    :type moves: list[tuple[int, int, int, int]]
+    :type subsums: list[array[int]]
+    :return: List of len(moves) sublists. Each sublist contains k 5-uplets that represents a move with the same format as the MOV request. The sum of all 3rd elements of a sublist is n. 
+    :rtype: list[list[tuple[int, int, int, int, int]]]
+
+    :Example:
+
+    >>> moves = [(0, 0, 4, 0, 1), (0, 0, 4, 1, 0), (0, 0, 4, 1, 1)]
+    >>> subsum = np.array([1, 3])
+    >>> SubMoves(moves, subsum)
+    [[(0, 0, 1, 4, 0), (0, 0, 3, 4, 1)],
+     [(0, 0, 1, 4, 0), (0, 0, 3, 4, 1)],
+     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 1)],
+     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 0)],
+     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 0)],
+     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 1)]]
+    """
+    if subsum.shape[0] == 1:
+        return [[(m[0], m[1], subsum[0], m[2], m[3])] for m in moves]
     else:
         res = []
-        for i in range(len(moves)):
+        for _ in range(len(moves)):
             m = moves.pop(0)
-            sum_b = sum[1:]
+            sum_b = subsum[1:]
             submoves = SubMoves(moves, sum_b)
             for submove in submoves:
-                res.append([(m[0], m[1], m[2], m[3], sum[0])] + submove)
+                res.append([(m[0], m[1], subsum[0], m[2], m[3])] + submove)
             moves.append(m)
         return res
 
-def SubSum(splits, n):
-    if splits == 1:
+def SubSum(k : int, n : int):
+    """
+    Computes all the k-uplets that sum to n
+
+    :param k: Represents the number of elements to be summed
+    :param n: Represents the result to be found
+    :type k: int
+    :type k: int
+    :return: List of arrays of size k such that the sum of all elements of an array is n
+    :rtype: list[array[int, int, int]]
+
+    :Example:
+
+    >>> k = 2
+    >>> n = 5
+    >>> SubSum(k, n)
+    [array([1, 4]), array([2, 3])]
+    """
+    if k == 1:
         return [np.array([n])]
     else:
-        l = []
-        for i in range(1, int(n/2)+1):
-            prec = SubSum(splits - 1, n - i)
+        subsums = []
+        for i in range(1, int(n / 2) + 1):
+            prec = SubSum(k - 1, n - i)
             for p in prec:
-                res = np.zeros(splits, dtype = int)
+                res = np.zeros(k, dtype = int)
                 res[0] = i
                 test = True
                 for j in range(1, res.shape[0]):
@@ -275,6 +330,6 @@ def SubSum(splits, n):
                     else:
                         break
                 if test:
-                    l.append(res)
-        return l
+                    subsums.append(res)
+        return subsums
 
