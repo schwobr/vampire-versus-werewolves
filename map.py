@@ -210,10 +210,9 @@ class Tray():
                                     m[1 + self.Type] = n1
                                 else:
                                     m[6 - self.Type] = n1
-                        upd.append(tuple(m))
-                m = [submove[0], submove[1], 0, 0, 0]
-                m[1 + self.Type] = self.MAP[submove[1], submove[0], 1] - n
-                upd.append({'UPD' : tuple(m), 'MOV' : tuple(submove)})
+                        m1 = [submove[0], submove[1], 0, 0, 0]
+                        m1[1 + self.Type] = self.MAP[submove[1], submove[0], 1] - n                        
+                        upd.append({'UPD' : [tuple(m), tuple(m1)], 'MOV' : tuple(submove)})
                 updates.append(upd)
             return updates
         else:
@@ -223,7 +222,10 @@ class Tray():
             for upd in updates:
                 tray = Tray(self.N, self.M, [], Type = self.Type)
                 tray.MAP = np.copy(self.MAP)
-                tray.UpdateTray(upd)
+                up = []
+                for u in upd:
+                    up += [u['UPD'][0], u['UPD'][1]]
+                tray.UpdateTray(up)
                 other_updates = tray.GetUpdates(all_moves)
                 for other_upd in other_updates:
                     res.append(upd + other_upd)

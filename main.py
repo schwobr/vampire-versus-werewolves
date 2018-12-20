@@ -1,6 +1,7 @@
 import ServerConnection
 import map
 import time
+from AIs import AlphaBeta
 
 TCP_IP = "127.0.0.1"
 TCP_PORT = 5555
@@ -17,8 +18,8 @@ upd=client.receive("UPD")
 tray.UpdateTray(upd)
 
 while True:    
-    move = tray.stupidAI()
-    upd = client.send(move)
+    moves = AlphaBeta(tray, 2, 2)
+    upd = client.send(moves)
     print(upd)
     tray.UpdateTray(upd)
 
