@@ -18,8 +18,10 @@ upd=client.receive("UPD")
 tray.UpdateTray(upd)
 
 while True:    
-    moves = AlphaBeta(tray, 2, 2)
+    #print(tray.MAP)
+    #print(tray.vampires)
+    moves = AlphaBeta(tray, 5, 1)
     upd = client.send(moves)
-    print(upd)
+    #print(upd)
     tray.UpdateTray(upd)
 
