@@ -39,8 +39,7 @@ class Tray():
             else:
                 self.MAP[element[1], element[0], 0] = 0
                 self.MAP[element[1], element[0], 1] = 0
-            self.updateLists()
-            self.count()
+        self.updateLists()
         
     def CheckPlayer(self, liste, x, y):
         for el in liste:
@@ -51,19 +50,9 @@ class Tray():
                     return 3
     
     def count(self):
-        self.N_humans = 0
-        self.N_vampires = 0
-        self.N_werewolves = 0
-        for x in range(self.N):
-            for y in range(self.M):
-                if self.MAP[x, y, 0] != 0:
-                    i = self.MAP[x, y, 0]
-                    if i == 1:
-                        self.N_humans += 1
-                    elif i == 2:
-                        self.N_vampires += 1
-                    elif i == 3:
-                        self.N_werewolves += 1
+        self.N_humans = np.sum([h[2] for h in self.humans])
+        self.N_vampires = np.sum([v[2] for v in self.vampires])
+        self.N_werewolves = np.sum([w[2] for w in self.werewolves])
 
     def updateLists(self):
         self.humans = []
@@ -80,6 +69,7 @@ class Tray():
                         self.vampires.append((y, x, j))
                     elif i == 3:
                         self.werewolves.append((y, x, j))
+        self.count()
 
     def stupidAI(self):
         moves = []
@@ -210,10 +200,9 @@ class Tray():
                                     m[1 + self.Type] = n1
                                 else:
                                     m[6 - self.Type] = n1
-                        upd.append(tuple(m))
-                m = [submove[0], submove[1], 0, 0, 0]
-                m[1 + self.Type] = self.MAP[submove[1], submove[0], 1] - n
-                upd.append({'UPD' : tuple(m), 'MOV' : tuple(submove)})
+                        m1 = [submove[0], submove[1], 0, 0, 0]
+                        m1[1 + self.Type] = self.MAP[submove[1], submove[0], 1] - n                        
+                        upd.append({'UPD' : [tuple(m), tuple(m1)], 'MOV' : tuple(submove)})
                 updates.append(upd)
             return updates
         else:
@@ -223,7 +212,10 @@ class Tray():
             for upd in updates:
                 tray = Tray(self.N, self.M, [], Type = self.Type)
                 tray.MAP = np.copy(self.MAP)
-                tray.UpdateTray(upd)
+                up = []
+                for u in upd:
+                    up += [u['UPD'][0], u['UPD'][1]]
+                tray.UpdateTray(up)
                 other_updates = tray.GetUpdates(all_moves)
                 for other_upd in other_updates:
                     res.append(upd + other_upd)
@@ -264,23 +256,23 @@ def SubMoves(moves : list, subsum : list):
     Given a set of possible moves from a cell that contains n creatures and a subsum list of k-size arrays, gives all the possible submoves created by splitting the n elements in k
     
     :param moves: List of 4-uplets that represent all possible moves from a cell. For each 4-uplet, the first two elements represent the position of origin, and the last 2 the position of arrival
-    :param subsums: k-size (k fixed) array such that the sum of all elements of the array is n 
+    :param subsum: k-size (k fixed) array such that the sum of all elements of the array is n 
     :type moves: list[tuple[int, int, int, int]]
-    :type subsums: list[array[int]]
+    :type subsum: list[array[int]]
     :return: List of len(moves) sublists. Each sublist contains k 5-uplets that represents a move with the same format as the MOV request. The sum of all 3rd elements of a sublist is n. 
     :rtype: list[list[tuple[int, int, int, int, int]]]
 
     :Example:
 
-    >>> moves = [(0, 0, 4, 0, 1), (0, 0, 4, 1, 0), (0, 0, 4, 1, 1)]
+    >>> moves = [(0, 0, 0, 1), (0, 0, 1, 0), (0, 0, 1, 1)]
     >>> subsum = np.array([1, 3])
     >>> SubMoves(moves, subsum)
-    [[(0, 0, 1, 4, 0), (0, 0, 3, 4, 1)],
-     [(0, 0, 1, 4, 0), (0, 0, 3, 4, 1)],
-     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 1)],
-     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 0)],
-     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 0)],
-     [(0, 0, 1, 4, 1), (0, 0, 3, 4, 1)]]
+    [[(0, 0, 1, 0, 1), (0, 0, 3, 1, 0)],
+     [(0, 0, 1, 0, 1), (0, 0, 3, 1, 1)],
+     [(0, 0, 1, 1, 0), (0, 0, 3, 1, 1)],
+     [(0, 0, 1, 1, 0), (0, 0, 3, 0, 1)],
+     [(0, 0, 1, 1, 1), (0, 0, 3, 0, 1)],
+     [(0, 0, 1, 1, 1), (0, 0, 3, 1, 0)]]
     """
     if subsum.shape[0] == 1:
         return [[(m[0], m[1], subsum[0], m[2], m[3])] for m in moves]
