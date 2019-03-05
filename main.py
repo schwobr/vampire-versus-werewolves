@@ -21,10 +21,15 @@ node = Node(tray)
 while True:    
     #print(tray.MAP)
     #print(tray.vampires)
-    node, moves = AlphaBeta(tray, 2, 2)
+    node, moves = AlphaBeta(node, 2, 2)
+    print(moves)
     upd = client.send(moves)
-    #print(upd)
+    print(upd)
     tray.UpdateTray(upd)
-    if tray != node.tray:
+    test = False
+    for child in node.children:
+        if tray == child.tray:
+            test = True
+            node = child
+    if not(test):
         node = Node(tray)
-

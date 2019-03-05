@@ -21,10 +21,10 @@ class Node():
                 self.children.append(Node(newTray))
 
 
-def AlphaBeta(tray : Tray, d : int, maxSplit : int):
-    if tray.IsTerminal() or d == 0:
-        return heuristic(tray, 1) 
-    node = Node(tray)
+def AlphaBeta(node : Node, d : int, maxSplit : int):
+    if node.tray.IsTerminal() or d == 0:
+        return heuristic(node.tray, 1) 
+
     node.expand(maxSplit)
     moves : list
     maxv = -float('inf')
@@ -42,7 +42,8 @@ def MaxValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int):
     if node.tray.IsTerminal() or d == 0:
         return heuristic(node.tray, 1) 
     v = -float('inf')
-    node.expand(maxSplit)
+    #node.expand(maxSplit)
+    node.children = [Node(node.tray)]
     for k, child in enumerate(node.children):
         v = max(v, MinValue(child, alpha, beta, d - 1, maxSplit))
         if v >= beta:
