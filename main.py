@@ -1,7 +1,7 @@
 import ServerConnection
 import map
 import time
-from AIs import AlphaBeta
+from AIs import AlphaBeta, Node
 
 TCP_IP = "127.0.0.1"
 TCP_PORT = 5555
@@ -16,12 +16,15 @@ Map=res[3+n_houses:]
 tray = map.Tray(n, m, Map, x = x, y = y)
 upd=client.receive("UPD")
 tray.UpdateTray(upd)
+node = Node(tray)
 
 while True:    
     #print(tray.MAP)
     #print(tray.vampires)
-    moves = AlphaBeta(tray, 5, 1)
+    node, moves = AlphaBeta(tray, 2, 2)
     upd = client.send(moves)
     #print(upd)
     tray.UpdateTray(upd)
+    if tray != node.tray:
+        node = Node(tray)
 
