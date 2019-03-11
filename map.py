@@ -27,7 +27,7 @@ class Tray():
 
         
     def __eq__(self, tray):
-        return self.humans == tray.humans and self.vampires == tray.vampires and self.werewolves == tray.werewolves
+        return self.humans == tray.humans and self.vampires == tray.vampires and self.werewolves == tray.werewolves and self.Type == tray.Type
 
     def __ne__(self, tray):
         return not(self.__eq__(tray))
@@ -208,7 +208,9 @@ class Tray():
                         else:
                             if submove[2] >= 1.5 * self.MAP[submove[4], submove[3], 1]:
                                 m[1 + self.Type] = submove[2]
-                            elif self.MAP[submove[4], submove[3], 1] < 1.5 * submove[2]:
+                            elif self.MAP[submove[4], submove[3], 1] >= 1.5 * submove[2]:
+                                m[6-self.Type] = self.MAP[submove[4], submove[3], 1]
+                            else:
                                 (win, n1) = RandomBattle(submove[2], self.MAP[submove[4], submove[3], 1], False)
                                 if win:
                                     m[1 + self.Type] = n1
@@ -235,6 +237,68 @@ class Tray():
                     res.append(upd + other_upd)
             return res            
 
+    def heuristic1(self, nodeType : int):
+        if self.Type == 2:
+            if nodeType == 1:
+                us = self.vampires
+                them = self.werewolves
+                N_us = self.N_vampires
+                N_them = self.N_werewolves
+            else:
+                them = self.vampires
+                us = self.werewolves
+                N_them = self.N_vampires
+                N_us = self.N_werewolves
+        else:
+            if nodeType == 1:
+                them = self.vampires
+                us = self.werewolves
+                N_them = self.N_vampires
+                N_us = self.N_werewolves
+            else:
+                us = self.vampires
+                them = self.werewolves
+                N_us = self.N_vampires
+                N_them = self.N_werewolves
+        heuristic = 100 * (N_us - N_them) 
+        try:
+            d_hum_us = np.sum([np.min([max(abs(u[0]-hum[0]), abs(u[1]-hum[1])) for u in us if u[2]>=hum[2]]) for hum in self.humans])
+        except:
+            d_hum_us = 0
+        try:
+            d_hum_them = np.sum([np.min([max(abs(t[0]-hum[0]), abs(t[1]-hum[1])) for t in them if t[2]>=hum[2]]) for hum in self.humans])
+        except:
+            d_hum_them = 0
+        heuristic -= 20 * (d_hum_us - d_hum_them)
+        for en in them:
+            d_min = 10000
+            u_min = (0, 0, 0)
+            res = 0
+            for u in us:
+                d = max(abs(en[0]-u[0]), abs(en[1]-u[1])) 
+                if d < d_min:
+                    d_min = d
+                    u_min = u
+            if u_min[2]>=1.5*en[2]:
+                res = 2*u_min[2]-d_min
+            elif en[2] >= 1.5*u_min[2]:
+                res = -en[2]+d_min
+            else:
+                win1, res1 = RandomBattle(u_min[2], en[2], False)
+                win2, res2 = RandomBattle(en[2], u_min[2], False)               
+                if win1:
+                    res+= (2*res1-d_min)
+                else:
+                    res -= (2*res1-d_min)
+                if win2:
+                    res -= (2*res2-d_min)
+                else:
+                    res += (2*res2-d_min)
+            heuristic += 5 * res
+        return heuristic
+
+
+
 
 def RandomBattle(attack : int, defend : int, humans : bool):
     """
@@ -255,7 +319,7 @@ def RandomBattle(attack : int, defend : int, humans : bool):
     (False, 3)
     """
     p = attack / (2 * defend) if attack <= defend else attack / defend - 0.5
-    if p >= 0.5:
+    if p > 0.5:
         surv = attack * p
         if humans:
             surv += defend * p

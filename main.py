@@ -27,9 +27,8 @@ while True:
     print(upd)
     tray.UpdateTray(upd)
     test = False
-    for child in node.children:
-        if tray == child.tray:
+    if tray != node.tray:
             test = True
-            node = child
+            node = Node(tray)
     if not(test):
         node = Node(tray)
