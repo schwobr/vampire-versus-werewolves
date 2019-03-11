@@ -63,19 +63,3 @@ def MinValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int):
             return v
         beta = min(beta, v)
     return v
-
-def heuristic(tray : Tray, nodeType : int):
-    if tray.Type == 2:
-        if nodeType == 1:
-            us = tray.vampires
-            them = tray.werewolves
-            N_us = tray.N_vampires
-            N_them = tray.N_werewolves
-        else:
-            them = tray.vampires
-            us = tray.werewolves
-            N_them = tray.N_vampires
-            N_us = tray.N_werewolves
-        return nodeType*(tray.N_vampires-tray.N_werewolves)
-    else:
-        return nodeType*(tray.N_werewolves-tray.N_vampires)

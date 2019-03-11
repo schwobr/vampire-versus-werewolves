@@ -21,7 +21,7 @@ node = Node(tray)
 while True:    
     #print(tray.MAP)
     #print(tray.vampires)
-    node, moves = AlphaBeta(node, 5, 1)
+    node, moves = AlphaBeta(node, 2, 2)
     print(moves)
     upd = client.send(moves)
     print(upd)
