@@ -5,6 +5,7 @@ Created on Tue Oct 30 10:10:20 2018
 @author: hassenzarrouk
 """
 import numpy as np
+from itertools import permutations
 
 class Tray():
     
@@ -25,6 +26,12 @@ class Tray():
             self.Type = Type
 
         
+    def __eq__(self, tray):
+        return self.humans == tray.humans and self.vampires == tray.vampires and self.werewolves == tray.werewolves
+
+    def __ne__(self, tray):
+        return not(self.__eq__(tray))
+
     def UpdateTray(self, liste):
         for element in liste:
             if element[2] != 0:
@@ -109,29 +116,36 @@ class Tray():
 
 
     def GetChildren(self, maxSplit : int):
-        """Returns the list of all possible children the tray as lists of updates and moves
+        """Returns the list of all possible children of the tray as lists of updates and moves
         
-        :param maxSplit: maximum number of subgroups in which we try to split every group
+        :param maxSplit: maximum number of subgroups that can be present on the board
         :type maxSplit: int
-        :return: List of all possible children. Each chil is represented by a list of dictionnaries that contain a MOV 5-uplet and a UPD 5-uplet
+        :return: List of all possible children. Each child is represented by a list of dictionnaries that contain a MOV 5-uplet and a UPD 5-uplet
         :rtype: list[list[dict, tuple[int, int, int , int]]
         """
         test = self.Type == 2
-        us = self.vampires if test else self.werewolves    
+        us = self.vampires if test else self.werewolves   
+        moves_groups = [self.GetMoves(u[0], u[1]) for u in us]
         all_moves = []  
-        for u in us:
-            n = u[2]
-            x = u[0]
-            y = u[1]
-            moves_group = self.GetMoves(x, y)
-            submoves_group = []
-            for i in range(1, maxSplit + 1):
-                subsums = SubSum(i, n)
-                for s in subsums:
-                    submoves = SubMoves(moves_group, s)
-                    submoves_group += submoves
-            all_moves.append(submoves_group)
-        return self.GetUpdates(all_moves)
+        n_groups = len(us)
+        divisions = SubSum(n_groups, maxSplit)
+        for div in divisions:
+            possible = set(permutations(div))
+            for p in possible:
+                div_moves = []
+                for k, u in enumerate(us):
+                    n = u[2]
+                    m = p[k]
+                    moves_group = moves_groups[k]
+                    submoves_group = []
+                    for i in range(1, m + 1):
+                        subsums = SubSum(i, n)
+                        for s in subsums:
+                            submoves = SubMoves(moves_group, s)
+                            submoves_group += submoves
+                    div_moves.append(submoves_group)
+                all_moves += self.GetUpdates(div_moves)
+        return all_moves
 
     def GetMoves(self, x : int, y : int):
         """
@@ -296,7 +310,7 @@ def SubSum(k : int, n : int):
     :type k: int
     :type k: int
     :return: List of arrays of size k such that the sum of all elements of an array is n
-    :rtype: list[array[int, int, int]]
+    :rtype: list[array[int]]
 
     :Example:
 
