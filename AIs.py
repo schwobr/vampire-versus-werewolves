@@ -23,8 +23,7 @@ class Node():
 
 def AlphaBeta(node : Node, d : int, maxSplit : int):
     if node.tray.IsTerminal() or d == 0:
-        return heuristic(node.tray, 1) 
-
+        return node.tray.heuristic1(1) 
     node.expand(maxSplit)
     moves : list
     maxv = -float('inf')
@@ -40,10 +39,9 @@ def AlphaBeta(node : Node, d : int, maxSplit : int):
 
 def MaxValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int):
     if node.tray.IsTerminal() or d == 0:
-        return heuristic(node.tray, 1) 
+        return node.tray.heuristic1(1) 
     v = -float('inf')
-    #node.expand(maxSplit)
-    node.children = [Node(node.tray)]
+    node.expand(maxSplit)
     for k, child in enumerate(node.children):
         v = max(v, MinValue(child, alpha, beta, d - 1, maxSplit))
         if v >= beta:
@@ -54,8 +52,9 @@ def MaxValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int):
 
 def MinValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int):
     if node.tray.IsTerminal() or d == 0:
-        return heuristic(node.tray, -1)
+        return node.tray.heuristic1(-1)
     v = float('inf')
+    #node.children = [Node(node.tray)]
     node.expand(maxSplit)
     for k, child in enumerate(node.children):
         v = min(v, MaxValue(child, alpha, beta, d - 1, maxSplit))
@@ -67,6 +66,16 @@ def MinValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int):
 
 def heuristic(tray : Tray, nodeType : int):
     if tray.Type == 2:
+        if nodeType == 1:
+            us = tray.vampires
+            them = tray.werewolves
+            N_us = tray.N_vampires
+            N_them = tray.N_werewolves
+        else:
+            them = tray.vampires
+            us = tray.werewolves
+            N_them = tray.N_vampires
+            N_us = tray.N_werewolves
         return nodeType*(tray.N_vampires-tray.N_werewolves)
     else:
         return nodeType*(tray.N_werewolves-tray.N_vampires)
