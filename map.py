@@ -114,6 +114,11 @@ class Tray():
     def IsTerminal(self):
         return self.N_vampires == 0 or self.N_werewolves == 0
 
+    def Win(self):
+        if self.Type==2:
+            return self.N_werewolves==0 and self.N_vampires>0
+        else:
+             return self.N_vampires==0 and self.N_werewolves>0
 
     def GetChildren(self, maxSplit : int):
         """Returns the list of all possible children of the tray as lists of updates and moves
@@ -260,41 +265,44 @@ class Tray():
                 them = self.werewolves
                 N_us = self.N_vampires
                 N_them = self.N_werewolves
-        heuristic = 100 * (N_us - N_them) 
+        heuristic = 50 * (N_us - N_them) 
         try:
-            d_hum_us = np.sum([np.min([max(abs(u[0]-hum[0]), abs(u[1]-hum[1])) for u in us if u[2]>=hum[2]]) for hum in self.humans])
+            d_hum_us = np.sum([np.min([max(abs(u[0]-hum[0]), abs(u[1]-hum[1])) for hum in self.humans if u[2]>=hum[2]]) for u in us])
         except:
             d_hum_us = 0
         try:
-            d_hum_them = np.sum([np.min([max(abs(t[0]-hum[0]), abs(t[1]-hum[1])) for t in them if t[2]>=hum[2]]) for hum in self.humans])
+            d_hum_them = np.sum([np.min([max(abs(t[0]-hum[0]), abs(t[1]-hum[1])) for hum in self.humans if t[2]>=hum[2]]) for t in them])
         except:
             d_hum_them = 0
-        heuristic -= 20 * (d_hum_us - d_hum_them)
-        for en in them:
+        heuristic -= 10 * (d_hum_us - d_hum_them)
+        dmax = max(self.N, self.M)
+        for u in us:
             d_min = 10000
-            u_min = (0, 0, 0)
+            en_min = (0, 0, 0)
             res = 0
-            for u in us:
+            for en in them:
                 d = max(abs(en[0]-u[0]), abs(en[1]-u[1])) 
                 if d < d_min:
                     d_min = d
-                    u_min = u
-            if u_min[2]>=1.5*en[2]:
-                res = 2*u_min[2]-d_min
-            elif en[2] >= 1.5*u_min[2]:
-                res = -en[2]+d_min
+                    en_min = en
+            if them == []:
+                d_min=-10
+            if en_min[2]>=1.5*u[2]:
+                res = -en_min[2]*(dmax-d_min)
+            elif u[2] >= 1.5*en_min[2]:
+                res = u[2]*(dmax-d_min)
             else:
-                win1, res1 = RandomBattle(u_min[2], en[2], False)
-                win2, res2 = RandomBattle(en[2], u_min[2], False)               
+                win1, res1 = RandomBattle(u[2], en_min[2], False)
+                win2, res2 = RandomBattle(en_min[2], u[2], False)               
                 if win1:
-                    res+= (2*res1-d_min)
+                    res+= res1*(dmax-d_min)
                 else:
-                    res -= (2*res1-d_min)
+                    res -= res1*(dmax-d_min)
                 if win2:
-                    res -= (2*res2-d_min)
+                    res -= res2*(dmax-d_min)
                 else:
-                    res += (2*res2-d_min)
-            heuristic += 5 * res
+                    res += res2*(dmax-d_min)
+            heuristic += 20*res
         return heuristic
 
 

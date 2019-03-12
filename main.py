@@ -2,9 +2,14 @@ import ServerConnection
 import map
 import time
 from AIs import AlphaBeta, Node
+import sys
 
-TCP_IP = "127.0.0.1"
-TCP_PORT = 5555
+try:
+    TCP_IP = sys.argv[1]
+    TCP_PORT = int(sys.argv[2])
+except:
+    TCP_IP="127.0.0.1"
+    TCP_PORT = 5555
 
 client = ServerConnection.ClientThread()
 res = client.connect(TCP_IP,TCP_PORT)
@@ -21,7 +26,7 @@ node = Node(tray)
 while True:    
     #print(tray.MAP)
     #print(tray.vampires)
-    node, moves = AlphaBeta(node, 2, 2)
+    node, moves = AlphaBeta(node, 5, 1)
     print(moves)
     upd = client.send(moves)
     print(upd)
