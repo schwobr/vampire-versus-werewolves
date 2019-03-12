@@ -28,7 +28,10 @@ while True:
     print(moves)
     upd = client.send(moves)
     print(upd)
-    tray.UpdateTray(upd)
+    try:
+        tray.UpdateTray(upd)
+    except:
+        break
     test = False
     if tray != node.tray:
             test = True

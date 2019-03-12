@@ -146,8 +146,8 @@ class Tray():
                     for i in range(1, m + 1):
                         group_splits = possibleSplits(i, n)
                         for group_split in group_splits:
-                            split_moves = splitMoves(moves_group, group_split)
-                            split_moves_group += split_moves
+                            split_move_group = splitMoves(moves_group, group_split)
+                            split_moves_group += split_move_group
                     split_moves.append(split_moves_group)
                 all_moves += self.GetUpdates(split_moves)
         return all_moves
@@ -198,7 +198,7 @@ class Tray():
                 for split_move in split_moves:
                     upd1 = [split_move[3], split_move[4], 0, 0, 0]
                     if not(split_move[4] == split_move[1] and split_move[3] == split_move[0]):
-                        n += split_move[2]
+                        n_moving_tot += split_move[2]
                         if self.Grid[split_move[4], split_move[3], 0] == self.Type:
                             upd1[1 + self.Type] = self.Grid[split_move[4], split_move[3], 1] + split_move[2]
                         elif self.Grid[split_move[4], split_move[3], 0] == 1:
