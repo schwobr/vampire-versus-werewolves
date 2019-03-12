@@ -2,7 +2,6 @@
 import socket
 import struct
 
-
 class ClientThread():
     def __init__(self):
         self.serverSocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)

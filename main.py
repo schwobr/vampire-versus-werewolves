@@ -1,5 +1,5 @@
 import ServerConnection
-import map
+from Tray import Tray
 import time
 from AIs import AlphaBeta, Node
 import sys
@@ -13,19 +13,17 @@ except:
 
 client = ServerConnection.ClientThread()
 res = client.connect(TCP_IP,TCP_PORT)
-n,m=res[0]
-n_houses=res[1]
-hum=res[2:2+n_houses]
-x,y=res[2+n_houses]
-Map=res[3+n_houses:]
-tray = map.Tray(n, m, Map, x = x, y = y)
+n, m = res[0]
+n_houses = res[1]
+hum = res[2:2+n_houses]
+x, y = res[2+n_houses]
+upd = res[3+n_houses:]
+tray = Tray(n, m, upd, x = x, y = y)
 upd=client.receive("UPD")
 tray.UpdateTray(upd)
 node = Node(tray)
 
 while True:    
-    #print(tray.MAP)
-    #print(tray.vampires)
     node, moves = AlphaBeta(node, 5, 1)
     print(moves)
     upd = client.send(moves)
