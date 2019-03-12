@@ -10,7 +10,7 @@ class ClientThread():
     def connect(self, ip, port):
         self.serverSocket.connect((ip,port))
         print("Connection to %s on port %s" %(ip,port))
-        data=input("Choose your name : ")
+        data="StupidAI"
         return self.send(["NME",len(data),data])    
 
     def receive_data(self, size, fmt):
@@ -23,7 +23,6 @@ class ClientThread():
         received = self.serverSocket.recv(3).decode("ascii") 
         if received==expected or received=="END" or received=="BYE":  
             if received=="SET":
-                data=bytes()
                 n,m=self.receive_data(2,"2B")
                 return [(n,m)]+self.receive("HUM")
             elif received=="HUM":
@@ -85,12 +84,3 @@ class ClientThread():
             self.serverSocket.send(struct.pack("1B",n))
             self.serverSocket.send(struct.pack("{}B".format(5*n), *(data[2])))
             return self.receive("UPD")
-
-
-
-
-
-
-    
-
-
