@@ -5,7 +5,9 @@ Created on Tue Oct 30 10:10:20 2018
 @author: hassenzarrouk
 """
 import numpy as np
-from itertools import permutations
+from itertools import permutations, zip_longest
+import concurrent.futures
+#   import multiprocessing
 
 class Tray():
     
@@ -153,31 +155,6 @@ class Tray():
         else:
              return self.N_vampires==0 and self.N_werewolves>0
 
-    def GetChildren(self, maxSplit : int):
-        test = self.Type == 2
-        us = self.Vampires if test else self.Werewolves   
-        moves_all_groups = [self.GetMoves(u[0], u[1]) for u in us]
-        all_moves = []  
-        n_groups = len(us)
-        for n_splits in range(1, maxSplit+1):
-            splits = possibleSplits(n_groups, n_splits)
-            for split in splits:
-                possible_splits = set(permutations(split))
-                for possible_split in possible_splits:
-                    split_moves = []
-                    for k, u in enumerate(us):
-                        n = u[2]
-                        m = possible_split[k]
-                        moves_group = moves_all_groups[k]
-                        split_moves_group = []
-                        for i in range(1, m + 1):
-                            group_splits = possibleSplits(i, n)
-                            for group_split in group_splits:
-                                split_move_group = splitMoves(moves_group, group_split)
-                                split_moves_group += split_move_group
-                        split_moves.append(split_moves_group)
-                    all_moves += self.GetUpdates(split_moves)
-        return all_moves
 
     def GetEdges(self, maxSplit : int):
         """Returns the list of all possible children of the tray as lists of updates and moves
@@ -203,15 +180,14 @@ class Tray():
                         m = permutation[k]
                         moves_group = moves_all_groups[k]
                         all_moves_group = []
-                        for i in range(1, m + 1):
-                            group_splits = possibleSplits(i, n)
-                            for group_split in group_splits:
-                                split_moves_group = splitMoves(moves_group, group_split)
-                                all_moves_group += split_moves_group
+                        group_splits = possibleSplits(m, n)
+                        for group_split in group_splits:
+                            all_moves_group += splitMoves(moves_group, group_split)
                         split_moves.append(all_moves_group)
                     all_moves += getAllMoves(split_moves)
         return all_moves
 
+    
     def GetMoves(self, x : int, y : int):
         """
         Given a position, gets all the accessible positions from there
@@ -240,68 +216,6 @@ class Tray():
                 moves.append((x, y, m_x, m_y))
         return moves
 
-    def GetUpdates(self, split_moves : list):
-        """
-        Given the list of all possible moves, returns the list of all possible update lists with same format as server's UPD packages. Every update is associated with the corresponding MOV request
-
-        :param split_moves: List of list. Each sublist corresponds to a group of allied creatures on the board and contains other sublists, that themselves contain a set of compatible moves from this group
-        :type split_moves: list[list[list[tuple[int, int, int, int, int]]]]
-        :return: A list of list of compatible updates. Every sublist contains dictionaries that contain the UPD 5-uplet and the MOV 5-uplet, and all these dictionaries are moves that can be performed the same turn
-        :rtype: list[list[[dict, tuple[int, int, int, int, int]]]]
-        """
-        if len(split_moves) == 1:
-            updates = []
-            split_moves_group = split_moves[0]
-            for split_moves in split_moves_group:
-                n_moving_tot = 0
-                upd_moves = []
-                for split_move in split_moves:
-                    upd1 = [split_move[3], split_move[4], 0, 0, 0]
-                    if not(split_move[4] == split_move[1] and split_move[3] == split_move[0]):
-                        n_moving_tot += split_move[2]
-                        if self.Grid[split_move[4], split_move[3], 0] == self.Type:
-                            upd1[1 + self.Type] = self.Grid[split_move[4], split_move[3], 1] + split_move[2]
-                        elif self.Grid[split_move[4], split_move[3], 0] == 1:
-                            if split_move[2] >= self.Grid[split_move[4], split_move[3], 1]:
-                                upd1[1 + self.Type] = self.Grid[split_move[4], split_move[3], 1] + split_move[2]
-                            else : 
-                                (win, n_moving_tot) = randomBattle(split_move[2], self.Grid[split_move[4], split_move[3], 1], True)
-                                if win:
-                                    upd1[1 + self.Type] = n_moving_tot
-                                else:
-                                    upd1[2] = n_moving_tot
-                        else:
-                            if split_move[2] >= 1.5 * self.Grid[split_move[4], split_move[3], 1]:
-                                upd1[1 + self.Type] = split_move[2]
-                            elif self.Grid[split_move[4], split_move[3], 1] >= 1.5 * split_move[2]:
-                                upd1[6-self.Type] = self.Grid[split_move[4], split_move[3], 1]
-                            else:
-                                (win, n_moving_tot) = randomBattle(split_move[2], self.Grid[split_move[4], split_move[3], 1], False)
-                                if win:
-                                    upd1[1 + self.Type] = n_moving_tot
-                                else:
-                                    upd1[6 - self.Type] = n_moving_tot
-                        upd2 = [split_move[0], split_move[1], 0, 0, 0]
-                        upd2[1 + self.Type] = self.Grid[split_move[1], split_move[0], 1] - n_moving_tot                        
-                        upd_moves.append({'UPD' : [tuple(upd1), tuple(upd2)], 'MOV' : tuple(split_move)})
-                updates.append(upd_moves)
-            return updates
-        else:
-            split_moves_group = split_moves.pop(0)
-            group_updates = self.GetUpdates([split_moves_group])
-            updates = []
-            for upd_moves in group_updates:
-                tray = Tray(self.N, self.M, [], Type = self.Type)
-                tray.Grid = np.copy(self.Grid)
-                upd = []
-                for upd_mov in upd_moves:
-                    upd += [upd_mov['UPD'][0], upd_mov['UPD'][1]]
-                tray.UpdateTray(upd)
-                updates_rest = tray.GetUpdates(split_moves)
-                for upd_moves_rest in updates_rest:
-                    updates.append(upd_moves + upd_moves_rest)
-            return updates            
-
     def Heuristic(self, nodeType : int):
         if self.Type == 2:
             if nodeType == 1:
@@ -325,7 +239,7 @@ class Tray():
                 them = self.Werewolves
                 N_us = self.N_vampires
                 N_them = self.N_werewolves
-        heuristic = 50 * (N_us - N_them) 
+        heuristic = 100 * (N_us - N_them) 
         try:
             d_hum_us = np.sum([np.min([max(abs(u[0]-hum[0]), abs(u[1]-hum[1])) for hum in self.Humans if u[2]>=hum[2]]) for u in us])
         except:
@@ -345,12 +259,10 @@ class Tray():
                 if d < d_min:
                     d_min = d
                     en_min = en
-            if them == []:
-                d_min=-10
             if en_min[2]>=1.5*u[2]:
-                res = -en_min[2]*(dmax-d_min)
+                res = -10*en_min[2]*(dmax-d_min)
             elif u[2] >= 1.5*en_min[2]:
-                res = u[2]*(dmax-d_min)
+                res = 10*u[2]*(dmax-d_min)
             else:
                 win1, res1 = randomBattle(u[2], en_min[2], False)
                 win2, res2 = randomBattle(en_min[2], u[2], False)               
@@ -362,7 +274,7 @@ class Tray():
                     res -= res2*(dmax-d_min)
                 else:
                     res += res2*(dmax-d_min)
-            heuristic += 20*res
+            heuristic += res
         return heuristic
 
 
@@ -482,5 +394,3 @@ def getAllMoves(split_moves : list):
             for moveList in group_moves_init:
                 all_moves.append(moveList_rest+moveList)
         return all_moves
-
-
