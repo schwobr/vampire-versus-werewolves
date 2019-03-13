@@ -125,11 +125,12 @@ class Tray():
             mini = 100000
             if self.N_humans>0:
                 for h in self.Humans:
-                    d = (h[0] - u[0])**2 + (h[1] - u[1])**2
-                    if d < mini :
-                        mini = d
-                        x = h[0]
-                        y = h[1]
+                    if h[2]<=u[2]:
+                        d = (h[0] - u[0])**2 + (h[1] - u[1])**2
+                        if d < mini :
+                            mini = d
+                            x = h[0]
+                            y = h[1]
             else :
                 for t in them:
                     d = (t[0] - u[0])**2 + (t[1] - u[1])**2
@@ -169,10 +170,13 @@ class Tray():
         moves_all_groups = [self.GetMoves(u[0], u[1]) for u in us]
         all_moves = []  
         n_groups = len(us)
+        maxSplit = max(maxSplit, n_groups)
+        print('here')
         for n_splits in range(1, maxSplit+1):
             splits = possibleSplits(n_groups, n_splits)
             for split in splits:
                 splits_permutations = set(permutations(split))
+                print('there')
                 for permutation in splits_permutations:
                     split_moves = []
                     for k, u in enumerate(us):
@@ -239,19 +243,39 @@ class Tray():
                 them = self.Werewolves
                 N_us = self.N_vampires
                 N_them = self.N_werewolves
-        heuristic = 100 * (N_us - N_them) 
+        heuristic = 100 * (N_us - N_them)
+        dmax = max(self.N, self.M)
         try:
-            d_hum_us = np.sum([np.min([max(abs(u[0]-hum[0]), abs(u[1]-hum[1])) for hum in self.Humans if u[2]>=hum[2]]) for u in us])
+            d_hum_us = 0
+            for u in us:
+                dmin = dmax
+                argmin = 0
+                for k, hum in enumerate(self.Humans):
+                    if u[2]>=hum[2]:
+                        d = max(abs(u[0], hum[0]), abs(u[1]-hum[1]))
+                        if d <= dmin and hum[2] >= self.Humans[argmin][2]:
+                            dmin = d
+                            argmin = k
+                d_hum_us += (dmax - dmin) * self.Humans[argmin][2]
         except:
             d_hum_us = 0
         try:
-            d_hum_them = np.sum([np.min([max(abs(t[0]-hum[0]), abs(t[1]-hum[1])) for hum in self.Humans if t[2]>=hum[2]]) for t in them])
+            d_hum_them = 0
+            for t in them:
+                dmin = dmax
+                argmin = 0
+                for k, hum in enumerate(self.Humans):
+                    if t[2]>=hum[2]:
+                        d = max(abs(t[0], hum[0]), abs(t[1]-hum[1]))
+                        if d <= dmin and hum[2] >= self.Humans[argmin][2]:
+                            dmin = d
+                            argmin = k
+                d_hum_them += (dmax - dmin) * self.Humans[argmin][2]        
         except:
             d_hum_them = 0
-        heuristic -= 10 * (d_hum_us - d_hum_them)
-        dmax = max(self.N, self.M)
+        heuristic += 20 * (d_hum_us - d_hum_them)
         for u in us:
-            d_min = 10000
+            d_min = dmax
             en_min = (0, 0, 0)
             res = 0
             for en in them:
@@ -260,9 +284,9 @@ class Tray():
                     d_min = d
                     en_min = en
             if en_min[2]>=1.5*u[2]:
-                res = -10*en_min[2]*(dmax-d_min)
+                res = -50*en_min[2]*(dmax-d_min)
             elif u[2] >= 1.5*en_min[2]:
-                res = 10*u[2]*(dmax-d_min)
+                res = 50*u[2]*(dmax-d_min)
             else:
                 win1, res1 = randomBattle(u[2], en_min[2], False)
                 win2, res2 = randomBattle(en_min[2], u[2], False)               

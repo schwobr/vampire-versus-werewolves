@@ -28,7 +28,7 @@ if __name__=='__main__':
     while True:           
         if playNext:
             t1 = time.time()
-            node, moves = AlphaBeta(node, d = 4, maxSplit = 1)
+            moves = tray.StupidAI()
             t2 = time.time()
             print(t2-t1)
             print(moves)
@@ -37,13 +37,14 @@ if __name__=='__main__':
             upd = client.receive('UPD')
             t2 = t1
         print(upd)
-        if t2-t1 <= 4.5:
+        if t2-t1 <= 10:
             playNext = True
             try:
                 tray.UpdateTray(upd)
             except:
                 break
             test = False
+            """
             print(node.GetDepth())
             for child in node.children:
                 if tray == child.tray:
@@ -53,6 +54,7 @@ if __name__=='__main__':
             if not(test):
                 print('not ok')
                 node = Node(tray)
+            """
         else:
             playNext = False
 

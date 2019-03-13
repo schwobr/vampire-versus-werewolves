@@ -31,7 +31,7 @@ class Node():
             except:
                 return d
 
-def AlphaBeta(node : Node, d : int, maxSplit : int, gamma = 0.9):
+def AlphaBeta(node : Node, d : int, maxSplit : int, gamma = 0.8):
     node.Expand(maxSplit)
     moves : list
     maxv = -float('inf')
@@ -47,11 +47,11 @@ def AlphaBeta(node : Node, d : int, maxSplit : int, gamma = 0.9):
                 res = child
     """
     for k, child in enumerate(node.children):
-        v = MinValue(child, -float('inf'), float('inf'), d - 1, maxSplit, gamma)
+        c, v = MinValue(child, -float('inf'), float('inf'), d - 1, maxSplit, gamma)
         if v >= maxv:
             maxv = v
             moves = node.edges[k]
-            res = child
+            res = c
     """
     mov = []
     for move in moves:
@@ -93,7 +93,9 @@ def MinValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int, 
     sameTray = Tray(node.tray.N, node.tray.M, [], Type = 5-node.tray.Type)
     sameTray.Grid = np.copy(node.tray.Grid)
     sameTray.UpdateLists()
+    print([child.tray.Vampires for child in node.children])
     node.children = [Node(sameTray)]+node.children
+    print([child.tray.Vampires for child in node.children])
     for k, child in enumerate(node.children):
         c, newv = MaxValue(child, alpha, beta, d - 1, maxSplit, gamma)
         v = gamma * min(v, newv)
