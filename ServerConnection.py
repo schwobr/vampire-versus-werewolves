@@ -5,11 +5,12 @@ import struct
 class ClientThread():
     def __init__(self):
         self.serverSocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.serverSocket.setblocking(True)
 
-    def connect(self, ip, port):
+    def connect(self, ip, port, name = "StupidAI"):
         self.serverSocket.connect((ip,port))
         print("Connection to %s on port %s" %(ip,port))
-        data="StupidAI"
+        data=name
         return self.send(["NME",len(data),data])    
 
     def receive_data(self, size, fmt):

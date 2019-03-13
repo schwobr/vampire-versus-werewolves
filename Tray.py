@@ -32,20 +32,53 @@ class Tray():
     def __ne__(self, tray):
         return not(self.__eq__(tray))
 
-    def UpdateTray(self, liste):
-        for element in liste:
-            if element[2] != 0:
-                self.Grid[element[1], element[0], 0] = 1
-                self.Grid[element[1], element[0], 1] = element[2]
-            elif element[3] != 0:
-                self.Grid[element[1], element[0], 0] = 2
-                self.Grid[element[1] ,element[0], 1] = element[3]
-            elif element[4] != 0:
-                self.Grid[element[1], element[0], 0] = 3
-                self.Grid[element[1], element[0], 1] = element[4]
-            else:
-                self.Grid[element[1], element[0], 0] = 0
-                self.Grid[element[1], element[0], 1] = 0
+    def UpdateTray(self, liste, is_upd = True):
+        if is_upd:
+            for upd in liste:
+                if upd[2] != 0:
+                    self.Grid[upd[1], upd[0], 0] = 1
+                    self.Grid[upd[1], upd[0], 1] = upd[2]
+                elif upd[3] != 0:
+                    self.Grid[upd[1], upd[0], 0] = 2
+                    self.Grid[upd[1] ,upd[0], 1] = upd[3]
+                elif upd[4] != 0:
+                    self.Grid[upd[1], upd[0], 0] = 3
+                    self.Grid[upd[1], upd[0], 1] = upd[4]
+                else:
+                    self.Grid[upd[1], upd[0], 0] = 0
+                    self.Grid[upd[1], upd[0], 1] = 0
+        else:
+            for mov in liste:
+                self.Grid[mov[1], mov[0], 1] -= mov[2]
+                if self.Grid[mov[1], mov[0], 1] == 0:
+                    self.Grid[mov[1], mov[0], 0] = 0
+                if self.Grid[mov[4], mov[3], 0] == self.Type:
+                    self.Grid[mov[4], mov[4], 1] += mov[2]
+                elif self.Grid[mov[4], mov[3], 0] == 0:
+                    self.Grid[mov[4], mov[3], 0] = self.Type
+                    self.Grid[mov[4], mov[3], 1] = mov[2]
+                elif self.Grid[mov[4], mov[3], 0] == 1:
+                    if mov[2] >= self.Grid[mov[4], mov[3], 1]:
+                        self.Grid[mov[4], mov[3], 0] = self.Type
+                        self.Grid[mov[4], mov[3], 1] += mov[2]
+                    else : 
+                        (win, surv) = randomBattle(mov[2], self.Grid[mov[4], mov[3], 1], True)
+                        if surv == 0:
+                            self.Grid[mov[4], mov[3], 0] = 0
+                        elif win:
+                            self.Grid[mov[4], mov[3], 0] = self.Type
+                        self.Grid[mov[4], mov[3], 1] = surv
+                else:
+                    if mov[2] >= 1.5 * self.Grid[mov[4], mov[3], 1]:
+                        self.Grid[mov[4], mov[3], 0] = self.Type
+                        self.Grid[mov[4], mov[3], 1] = mov[2]
+                    elif self.Grid[mov[4], mov[3], 1] < 1.5 * mov[2]:
+                        (win, surv) = randomBattle(mov[2], self.Grid[mov[4], mov[3], 1], False)
+                        if surv == 0:
+                            self.Grid[mov[4], mov[3], 0] = 0
+                        elif win:
+                            self.Grid[mov[4], mov[3], 0] = self.Type
+                        self.Grid[mov[4], mov[3], 1] = surv
         self.UpdateLists()
         
     def CheckPlayer(self, liste, x, y):
@@ -77,7 +110,7 @@ class Tray():
                     elif i == 3:
                         self.Werewolves.append((y, x, j))
         self.Count()
-
+    
     def StupidAI(self):
         moves = []
         test = self.Type == 2
@@ -121,6 +154,32 @@ class Tray():
              return self.N_vampires==0 and self.N_werewolves>0
 
     def GetChildren(self, maxSplit : int):
+        test = self.Type == 2
+        us = self.Vampires if test else self.Werewolves   
+        moves_all_groups = [self.GetMoves(u[0], u[1]) for u in us]
+        all_moves = []  
+        n_groups = len(us)
+        for n_splits in range(1, maxSplit+1):
+            splits = possibleSplits(n_groups, n_splits)
+            for split in splits:
+                possible_splits = set(permutations(split))
+                for possible_split in possible_splits:
+                    split_moves = []
+                    for k, u in enumerate(us):
+                        n = u[2]
+                        m = possible_split[k]
+                        moves_group = moves_all_groups[k]
+                        split_moves_group = []
+                        for i in range(1, m + 1):
+                            group_splits = possibleSplits(i, n)
+                            for group_split in group_splits:
+                                split_move_group = splitMoves(moves_group, group_split)
+                                split_moves_group += split_move_group
+                        split_moves.append(split_moves_group)
+                    all_moves += self.GetUpdates(split_moves)
+        return all_moves
+
+    def GetEdges(self, maxSplit : int):
         """Returns the list of all possible children of the tray as lists of updates and moves
         
         :param maxSplit: maximum number of subgroups that can be present on the board
@@ -133,23 +192,24 @@ class Tray():
         moves_all_groups = [self.GetMoves(u[0], u[1]) for u in us]
         all_moves = []  
         n_groups = len(us)
-        splits = possibleSplits(n_groups, maxSplit)
-        for split in splits:
-            possible_splits = set(permutations(split))
-            for possible_split in possible_splits:
-                split_moves = []
-                for k, u in enumerate(us):
-                    n = u[2]
-                    m = possible_split[k]
-                    moves_group = moves_all_groups[k]
-                    split_moves_group = []
-                    for i in range(1, m + 1):
-                        group_splits = possibleSplits(i, n)
-                        for group_split in group_splits:
-                            split_move_group = splitMoves(moves_group, group_split)
-                            split_moves_group += split_move_group
-                    split_moves.append(split_moves_group)
-                all_moves += self.GetUpdates(split_moves)
+        for n_splits in range(1, maxSplit+1):
+            splits = possibleSplits(n_groups, n_splits)
+            for split in splits:
+                splits_permutations = set(permutations(split))
+                for permutation in splits_permutations:
+                    split_moves = []
+                    for k, u in enumerate(us):
+                        n = u[2]
+                        m = permutation[k]
+                        moves_group = moves_all_groups[k]
+                        all_moves_group = []
+                        for i in range(1, m + 1):
+                            group_splits = possibleSplits(i, n)
+                            for group_split in group_splits:
+                                split_moves_group = splitMoves(moves_group, group_split)
+                                all_moves_group += split_moves_group
+                        split_moves.append(all_moves_group)
+                    all_moves += getAllMoves(split_moves)
         return all_moves
 
     def GetMoves(self, x : int, y : int):
@@ -410,4 +470,17 @@ def possibleSplits(n_splits : int, n_elements : int):
                 if test:
                     splits.append(split)
         return splits
+
+def getAllMoves(split_moves : list):
+    if len(split_moves) == 1:
+        return split_moves[0]
+    else:
+        group_moves_init = split_moves.pop()
+        all_moves_rest = getAllMoves(split_moves)
+        all_moves= []
+        for moveList_rest in all_moves_rest:
+            for moveList in group_moves_init:
+                all_moves.append(moveList_rest+moveList)
+        return all_moves
+
 

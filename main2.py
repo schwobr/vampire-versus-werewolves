@@ -12,7 +12,7 @@ except:
     TCP_PORT = 5555
 
 client = ServerConnection.ClientThread()
-res = client.connect(TCP_IP,TCP_PORT)
+res = client.connect(TCP_IP,TCP_PORT, "StupidAI2")
 n, m = res[0]
 n_houses = res[1]
 hum = res[2:2+n_houses]
@@ -24,7 +24,7 @@ tray.UpdateTray(upd)
 node = Node(tray)
 
 while True:    
-    node, moves = AlphaBeta(node, 4, 1)
+    node, moves = AlphaBeta(node, 3, 1)
     print(moves)
     upd = client.send(moves)
     print(upd)

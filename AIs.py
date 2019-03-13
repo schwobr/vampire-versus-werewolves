@@ -9,21 +9,17 @@ class Node():
 
     def Expand(self, maxSplit):
         if self.children == []:
-            self.edges = self.tray.GetChildren(maxSplit)[1:]
+            #self.edges = self.tray.GetChildren(maxSplit)[1:]
+            self.edges = self.tray.GetEdges(maxSplit)[1:]
             for edge in self.edges:
-                upd = []
-                for e in edge:
-                    upd += [e['UPD'][0], e['UPD'][1]]
-                newTray = Tray(self.tray.N, self.tray.M, [], Type = 5 - self.tray.Type)
+                newTray = Tray(self.tray.N, self.tray.M, [], Type = self.tray.Type)
                 newTray.Grid = np.copy(self.tray.Grid)
                 newTray.UpdateLists()
-                newTray.UpdateTray(upd)
+                newTray.UpdateTray(edge, is_upd = False)
+                newTray.Type = 5 - newTray.Type
                 self.children.append(Node(newTray))
 
-
 def AlphaBeta(node : Node, d : int, maxSplit : int, gamma = 0.8):
-    if node.tray.IsTerminal() or d == 0:
-        return node.tray.Heuristic(1) 
     node.Expand(maxSplit)
     moves : list
     maxv = -float('inf')
@@ -32,9 +28,13 @@ def AlphaBeta(node : Node, d : int, maxSplit : int, gamma = 0.8):
         v = MinValue(child, -float('inf'), float('inf'), d - 1, maxSplit, gamma)
         if v >= maxv:
             maxv = v
-            moves = [e['MOV'] for e in node.edges[k]]
+            moves = node.edges[k]
             res = child
-    return res, ["MOV", len(moves), [m for move in moves for m in move]]
+    mov = []
+    for move in moves:
+        if not(move[0]==move[3] and move[1]==move[4]):
+            mov += move
+    return res, ["MOV", int(len(mov)/5), mov]
 
 
 def MaxValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int, gamma = 0.8):
@@ -64,8 +64,8 @@ def MinValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int, 
     elif d == 0:
         return node.tray.Heuristic(-1)
     v = float('inf')
-    #node.children = [Node(node.tray)]
     node.Expand(maxSplit)
+    node.children.append(Node(node.tray))
     for k, child in enumerate(node.children):
         v = gamma * min(v, MaxValue(child, alpha, beta, d - 1, maxSplit, gamma))
         if v <= alpha:
