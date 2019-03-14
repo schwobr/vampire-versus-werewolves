@@ -13,7 +13,7 @@ if __name__=='__main__':
         TCP_PORT = 5555
 
     client = ServerConnection.ClientThread()
-    res = client.connect(TCP_IP,TCP_PORT)
+    res = client.connect(TCP_IP,TCP_PORT, "StupidAI2")
     n, m = res[0]
     n_houses = res[1]
     hum = res[2:2+n_houses]
@@ -26,33 +26,16 @@ if __name__=='__main__':
     playNext = True
 
     while True:           
-        if playNext:
-            t1 = time.time()
-            node, moves = AlphaBeta(node, d = 4, maxSplit = 1)
-            t2 = time.time()
-            print(t2-t1)
-            print(moves)
-            upd = client.send(moves)            
-        else:
-            upd = client.receive('UPD')
-            t2 = t1
+        t1 = time.time()
+        print(tray.Vampires)
+        moves = tray.StupidAI()
+        t2 = time.time()
+        print(t2-t1)
+        print(moves)
+        upd = client.send(moves)            
         print(upd)
-        if t2-t1 <= 10:
-            playNext = True
-            try:
-                tray.UpdateTray(upd)
-            except:
-                break
-            test = False
-            print(node.GetDepth())
-            for child in node.children:
-                if tray == child.tray:
-                    test = True
-                    node = child
-                    break
-            if not(test):
-                print('not ok')
-                node = Node(tray)
-        else:
-            playNext = False
+        try:
+            tray.UpdateTray(upd)
+        except:
+            break
 

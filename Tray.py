@@ -113,12 +113,95 @@ class Tray():
                         self.Werewolves.append((y, x, j))
         self.Count()
     
+    def OptimalPath(self, u, h, dest_us):
+        moves = np.array(self.GetMoves(u[0], u[1])[1:])
+        idx = np.argsort([distance(m[2:], h) for m in moves])
+        moves = moves[idx]
+        for move in moves:
+            x = move[2]
+            y = move[3]
+            if (x, y) not in dest_us:
+                enemies = self.Grid[y, x, 0] == 5-self.Type and u[2]<1.5*self.Grid[y, x, 1]
+                humans = self.Grid[y, x, 0] == 1 and u[2]<self.Grid[y, x, 1]
+                if not(enemies or humans):
+                    return x, y
+        return(u[0], u[1])
+
     def StupidAI(self):
         moves = []
         test = self.Type == 2
         us = self.Vampires if test else self.Werewolves
         them = self.Werewolves if test else self.Vampires
-        n=0
+        destinations = []   
+        dest_us = []
+        if self.N_humans>0:         
+            for u in us:
+                idx = np.argsort([distance(h, u) for h in self.Humans])   
+                staying = u[2]      
+                minleave = 1000
+                minleave_id = 0
+                group_moves = []
+                for i in idx:
+                    h = self.Humans[i]
+                    if h not in destinations and staying>=h[2]:
+                        x, y = self.OptimalPath(u, h, dest_us)   
+                        dest_us.append((u[0], u[1]))
+                        destinations.append(h)  
+                        leaving = h[2]                       
+                        if leaving < minleave:
+                            minleave = leaving  
+                            minleave_id = len(group_moves)         
+                        move = [u[0], u[1], leaving, x, y]
+                        staying -= leaving
+                        group_moves.append(move)
+                if staying > 0:
+                    if group_moves == []:
+                        if len(us) > 1:
+                            umin = us[np.argmin([distance(u, u1) for u1 in us if u1 != u])]
+                            x, y = self.OptimalPath(u, umin, dest_us)
+                        else:
+                            hmin = self.Humans[np.argmin([h[2] for h in self.Humans])]
+                            x, y = self.OptimalPath(u, hmin, dest_us)
+                        dest_us.append((u[0], u[1]))
+                        group_moves.append([u[0], u[1], staying, x, y])
+                    else:
+                        group_moves[minleave_id][2] += staying
+                moves += group_moves
+        else:
+            for u in us:
+                idx = np.flip(np.argsort([t[2] for t in them])) 
+                staying = u[2]      
+                minleave = 1000
+                minleave_id = 0
+                group_moves = []
+                for i in idx:
+                    t = them[i]
+                    if t not in destinations and staying>=1.5*t[2]:
+                        x, y = self.OptimalPath(u, t, dest_us)     
+                        dest_us.append((u[0], u[1]))
+                        leaving = t[2]
+                        destinations.append(t)
+                        if leaving < minleave:
+                            minleave = leaving  
+                            minleave_id = len(group_moves)          
+                        move = [u[0], u[1], leaving, x, y]
+                        staying -= leaving
+                        group_moves.append(move)
+                if staying > 0:
+                    if group_moves == []:
+                        if len(us) > 1:
+                            umin = us[np.argmin([distance(u, u1) for u1 in us if u1 != u])]
+                            x, y = self.OptimalPath(u, umin, dest_us)
+                        else:
+                            tmin = them[idx[-1]]
+                            x, y = self.OptimalPath(u, tmin, dest_us)
+                            dest_us.append((u[0], u[1]))
+                        group_moves.append([u[0], u[1], staying, x, y])
+                    else:
+                        group_moves[minleave_id][2] += staying     
+                moves += group_moves       
+        return ["MOV", len(moves), [m for move in moves for m in move]]
+        """
         for u in us:
             x = 0
             y = 0
@@ -146,6 +229,7 @@ class Tray():
             n += 1
         print(moves)
         return ["MOV", n, moves]
+        """
 
     def IsTerminal(self):
         return self.N_vampires == 0 or self.N_werewolves == 0
@@ -418,3 +502,6 @@ def getAllMoves(split_moves : list):
             for moveList in group_moves_init:
                 all_moves.append(moveList_rest+moveList)
         return all_moves
+
+def distance(a, b):
+    return max(abs(a[0] - b[0]), abs(a[1] - b[1]))

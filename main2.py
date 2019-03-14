@@ -13,7 +13,7 @@ if __name__=='__main__':
         TCP_PORT = 5555
 
     client = ServerConnection.ClientThread()
-    res = client.connect(TCP_IP,TCP_PORT, "StupidAI2")
+    res = client.connect(TCP_IP,TCP_PORT)
     n, m = res[0]
     n_houses = res[1]
     hum = res[2:2+n_houses]
@@ -28,7 +28,7 @@ if __name__=='__main__':
     while True:           
         if playNext:
             t1 = time.time()
-            moves = tray.StupidAI()
+            node, moves = AlphaBeta(node, d = 4, maxSplit = 1)
             t2 = time.time()
             print(t2-t1)
             print(moves)
@@ -44,7 +44,6 @@ if __name__=='__main__':
             except:
                 break
             test = False
-            """
             print(node.GetDepth())
             for child in node.children:
                 if tray == child.tray:
@@ -54,7 +53,6 @@ if __name__=='__main__':
             if not(test):
                 print('not ok')
                 node = Node(tray)
-            """
         else:
             playNext = False
 
