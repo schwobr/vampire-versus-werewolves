@@ -9,10 +9,10 @@ class Node():
         self.children = []
         self.edges = []
 
-    def Expand(self, maxSplit):
+    def Expand(self, maxSplit, nodeType):
         if self.children == []:
             #self.edges = self.tray.GetChildren(maxSplit)[1:]
-            self.edges = self.tray.GetEdges(maxSplit)[1:]
+            self.edges = self.tray.GetEdges(maxSplit)[:]
             for edge in self.edges:
                 newTray = Tray(self.tray.N, self.tray.M, [], Type = self.tray.Type)
                 newTray.Grid = np.copy(self.tray.Grid)
@@ -20,6 +20,11 @@ class Node():
                 newTray.UpdateTray(edge, is_upd = False)
                 newTray.Type = 5 - newTray.Type
                 self.children.append(Node(newTray))
+            #heuristics = [child.tray.Heuristic(-nodeType) for child in self.children]
+            #idx = np.flip(np.argsort(heuristics))
+            #idx = idx[:min(6, len(idx))]
+            #self.edges = [self.edges[i] for i in idx]
+            #self.children = [self.children[i] for i in idx]
     
     def GetDepth(self):
         d = 0
@@ -32,7 +37,7 @@ class Node():
                 return d
 
 def AlphaBeta(node : Node, d : int, maxSplit : int, gamma = 0.8):
-    node.Expand(maxSplit)
+    node.Expand(maxSplit, 1)
     moves : list
     maxv = -float('inf')
     res : Node
@@ -41,10 +46,18 @@ def AlphaBeta(node : Node, d : int, maxSplit : int, gamma = 0.8):
         for future in concurrent.futures.as_completed(futures):
             k = futures[future]
             child, v = future.result()
+            print (v)
+            print (node.edges[k])
             if v >= maxv:
-                maxv = v
-                moves = node.edges[k]
-                res = child
+                test = False
+                for move in node.edges[k]:
+                    if move[0]!=move[3] or move[1]!=move[4]:
+                        test = True
+                        break
+                if test:
+                    maxv = v
+                    moves = node.edges[k]
+                    res = child
     """
     for k, child in enumerate(node.children):
         c, v = MinValue(child, -float('inf'), float('inf'), d - 1, maxSplit, gamma)
@@ -69,7 +82,7 @@ def MaxValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int, 
     elif d==0:
         return node, node.tray.Heuristic(1) 
     v = -float('inf')
-    node.Expand(maxSplit)
+    node.Expand(maxSplit, 1)
     for k, child in enumerate(node.children):
         c, newv = MinValue(child, alpha, beta, d - 1, maxSplit, gamma)
         v = gamma*max(v, newv)
@@ -89,13 +102,7 @@ def MinValue(node : Node, alpha : float, beta : float, d : int, maxSplit : int, 
     elif d == 0:
         return node, node.tray.Heuristic(-1)
     v = float('inf')
-    node.Expand(maxSplit)
-    sameTray = Tray(node.tray.N, node.tray.M, [], Type = 5-node.tray.Type)
-    sameTray.Grid = np.copy(node.tray.Grid)
-    sameTray.UpdateLists()
-    print([child.tray.Vampires for child in node.children])
-    node.children = [Node(sameTray)]+node.children
-    print([child.tray.Vampires for child in node.children])
+    node.Expand(maxSplit, -1)
     for k, child in enumerate(node.children):
         c, newv = MaxValue(child, alpha, beta, d - 1, maxSplit, gamma)
         v = gamma * min(v, newv)
